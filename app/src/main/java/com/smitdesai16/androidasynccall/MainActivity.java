@@ -9,28 +9,38 @@ import android.os.Handler;
 import android.os.Message;
 import android.widget.TextView;
 
-import java.util.concurrent.ExecutionException;
-
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvMain;
     private String text;
+
+    static class MainActivityOnCreateHandler extends Handler {
+        private final MainActivity mainActivity;
+        private String text;
+
+        MainActivityOnCreateHandler(MainActivity mainActivity) {
+            this.mainActivity = mainActivity;
+        }
+
+        void InitializeAdditionalParameter(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            mainActivity.tvMain.setText(text);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        MainActivity context = this;
         tvMain = findViewById(R.id.tvMain);
-
-        final Handler handler = new Handler() {
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                super.handleMessage(msg);
-
-                tvMain.setText(text);
-            }
-        };
+        MainActivityOnCreateHandler mainActivityOnCreateHandler = new MainActivityOnCreateHandler(context);
 
         Runnable runnable = new Runnable() {
             @Override
@@ -38,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     TodoService todoService = new TodoService();
                     text = todoService.execute().get();
-                    handler.sendEmptyMessage(0);
+                    mainActivityOnCreateHandler.InitializeAdditionalParameter(text);
+                    mainActivityOnCreateHandler.sendEmptyMessage(0);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
